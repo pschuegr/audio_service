@@ -68,16 +68,12 @@ class MainScreen extends StatelessWidget {
                                 IconButton(
                                   icon: Icon(Icons.skip_previous),
                                   iconSize: 64.0,
-                                  onPressed: mediaItem == queue.first
-                                      ? null
-                                      : AudioService.skipToPrevious,
+                                  onPressed: mediaItem == queue.first ? null : AudioService.skipToPrevious,
                                 ),
                                 IconButton(
                                   icon: Icon(Icons.skip_next),
                                   iconSize: 64.0,
-                                  onPressed: mediaItem == queue.last
-                                      ? null
-                                      : AudioService.skipToNext,
+                                  onPressed: mediaItem == queue.last ? null : AudioService.skipToNext,
                                 ),
                               ],
                             ),
@@ -88,9 +84,7 @@ class MainScreen extends StatelessWidget {
                   ),
                   // Play/pause/stop buttons.
                   StreamBuilder<bool>(
-                    stream: AudioService.playbackStateStream
-                        .map((state) => state.playing)
-                        .distinct(),
+                    stream: AudioService.playbackStateStream.map((state) => state.playing).distinct(),
                     builder: (context, snapshot) {
                       final playing = snapshot.data ?? false;
                       return Row(
@@ -108,8 +102,7 @@ class MainScreen extends StatelessWidget {
                     builder: (context, snapshot) {
                       final mediaState = snapshot.data;
                       return SeekBar(
-                        duration:
-                            mediaState?.mediaItem?.duration ?? Duration.zero,
+                        duration: mediaState?.mediaItem?.duration ?? Duration.zero,
                         position: mediaState?.position ?? Duration.zero,
                         onChangeEnd: (newPosition) {
                           AudioService.seekTo(newPosition);
@@ -119,14 +112,10 @@ class MainScreen extends StatelessWidget {
                   ),
                   // Display the processing state.
                   StreamBuilder<AudioProcessingState>(
-                    stream: AudioService.playbackStateStream
-                        .map((state) => state.processingState)
-                        .distinct(),
+                    stream: AudioService.playbackStateStream.map((state) => state.processingState).distinct(),
                     builder: (context, snapshot) {
-                      final processingState =
-                          snapshot.data ?? AudioProcessingState.none;
-                      return Text(
-                          "Processing state: ${describeEnum(processingState)}");
+                      final processingState = snapshot.data ?? AudioProcessingState.none;
+                      return Text("Processing state: ${describeEnum(processingState)}");
                     },
                   ),
                   // Display the latest custom event.
@@ -156,19 +145,17 @@ class MainScreen extends StatelessWidget {
 
   /// A stream reporting the combined state of the current media item and its
   /// current position.
-  Stream<MediaState> get _mediaStateStream =>
-      Rx.combineLatest2<MediaItem, Duration, MediaState>(
-          AudioService.currentMediaItemStream,
-          AudioService.positionStream,
-          (mediaItem, position) => MediaState(mediaItem, position));
+  Stream<MediaState> get _mediaStateStream => Rx.combineLatest2<MediaItem, Duration, MediaState>(
+      AudioService.currentMediaItemStream,
+      AudioService.positionStream,
+      (mediaItem, position) => MediaState(mediaItem, position));
 
   /// A stream reporting the combined state of the current queue and the current
   /// media item within that queue.
-  Stream<QueueState> get _queueStateStream =>
-      Rx.combineLatest2<List<MediaItem>, MediaItem, QueueState>(
-          AudioService.queueStream,
-          AudioService.currentMediaItemStream,
-          (queue, mediaItem) => QueueState(queue, mediaItem));
+  Stream<QueueState> get _queueStateStream => Rx.combineLatest2<List<MediaItem>, MediaItem, QueueState>(
+      AudioService.queueStream,
+      AudioService.currentMediaItemStream,
+      (queue, mediaItem) => QueueState(queue, mediaItem));
 
   RaisedButton audioPlayerButton() => startButton(
         'AudioPlayer',
@@ -197,8 +184,7 @@ class MainScreen extends StatelessWidget {
         },
       );
 
-  RaisedButton startButton(String label, VoidCallback onPressed) =>
-      RaisedButton(
+  RaisedButton startButton(String label, VoidCallback onPressed) => RaisedButton(
         child: Text(label),
         onPressed: onPressed,
       );
@@ -259,8 +245,8 @@ class _SeekBarState extends State<SeekBar> {
 
   @override
   Widget build(BuildContext context) {
-    final value = min(_dragValue ?? widget.position?.inMilliseconds?.toDouble(),
-        widget.duration.inMilliseconds.toDouble());
+    final value =
+        min(_dragValue ?? widget.position?.inMilliseconds?.toDouble(), widget.duration.inMilliseconds.toDouble());
     if (_dragValue != null && !_dragging) {
       _dragValue = null;
     }
@@ -292,10 +278,7 @@ class _SeekBarState extends State<SeekBar> {
           right: 16.0,
           bottom: 0.0,
           child: Text(
-              RegExp(r'((^0*[1-9]\d*:)?\d{2}:\d{2})\.\d+$')
-                      .firstMatch("$_remaining")
-                      ?.group(1) ??
-                  '$_remaining',
+              RegExp(r'((^0*[1-9]\d*:)?\d{2}:\d{2})\.\d+$').firstMatch("$_remaining")?.group(1) ?? '$_remaining',
               style: Theme.of(context).textTheme.caption),
         ),
       ],
@@ -317,6 +300,8 @@ class AudioPlayerTask extends BackgroundAudioTask {
   AudioProcessingState _skipState;
   Seeker _seeker;
   StreamSubscription<PlaybackEvent> _eventSubscription;
+  StreamSubscription<SequenceState> _sequenceStateSubscription;
+  StreamSubscription<Duration> _durationSubscription;
 
   List<MediaItem> get queue => _mediaLibrary.items;
   int get index => _player.currentIndex;
@@ -336,6 +321,14 @@ class AudioPlayerTask extends BackgroundAudioTask {
     // Propagate all events from the audio player to AudioService clients.
     _eventSubscription = _player.playbackEventStream.listen((event) {
       _broadcastState();
+    });
+    _sequenceStateSubscription = _player.sequenceStateStream.listen((SequenceState state) async {
+      if (state == null) return;
+
+      print('Sequence change: index ${state.currentIndex}');
+    });
+    _durationSubscription = _player.durationStream.listen((Duration duration) async {
+      if (duration == null) return;
     });
     // Special processing for state transitions.
     _player.processingStateStream.listen((state) {
@@ -358,8 +351,7 @@ class AudioPlayerTask extends BackgroundAudioTask {
     AudioServiceBackground.setQueue(queue);
     try {
       await _player.setAudioSource(ConcatenatingAudioSource(
-        children:
-            queue.map((item) => AudioSource.uri(Uri.parse(item.id))).toList(),
+        children: queue.map((item) => AudioSource.uri(Uri.parse(item.id))).toList(),
       ));
       // In this example, we automatically start playing on start.
       onPlay();
@@ -381,9 +373,7 @@ class AudioPlayerTask extends BackgroundAudioTask {
     // previous. This variable holds the preferred state to send instead of
     // buffering during a skip, and it is cleared as soon as the player exits
     // buffering (see the listener in onStart).
-    _skipState = newIndex > index
-        ? AudioProcessingState.skippingToNext
-        : AudioProcessingState.skippingToPrevious;
+    _skipState = newIndex > index ? AudioProcessingState.skippingToNext : AudioProcessingState.skippingToPrevious;
     // This jumps to the beginning of the queue item at newIndex.
     _player.seek(Duration.zero, index: newIndex);
   }
@@ -411,8 +401,11 @@ class AudioPlayerTask extends BackgroundAudioTask {
 
   @override
   Future<void> onStop() async {
+    await _player.stop();
     await _player.dispose();
     _eventSubscription.cancel();
+    _sequenceStateSubscription.cancel();
+    _durationSubscription.cancel();
     // It is important to wait for this state to be broadcast before we shut
     // down the task. If we don't, the background task will be destroyed before
     // the message gets sent to the UI.
@@ -437,9 +430,7 @@ class AudioPlayerTask extends BackgroundAudioTask {
   void _seekContinuously(bool begin, int direction) {
     _seeker?.stop();
     if (begin) {
-      _seeker = Seeker(_player, Duration(seconds: 10 * direction),
-          Duration(seconds: 1), mediaItem)
-        ..start();
+      _seeker = Seeker(_player, Duration(seconds: 10 * direction), Duration(seconds: 1), mediaItem)..start();
     }
   }
 
@@ -497,8 +488,7 @@ class MediaLibrary {
       title: "A Salute To Head-Scratching Science",
       artist: "Science Friday and WNYC Studios",
       duration: Duration(milliseconds: 5739820),
-      artUri:
-          "https://media.wnyc.org/i/1400/1400/l/80/1/ScienceFriday_WNYCStudios_1400.jpg",
+      artUri: "https://media.wnyc.org/i/1400/1400/l/80/1/ScienceFriday_WNYCStudios_1400.jpg",
     ),
     MediaItem(
       id: "https://s3.amazonaws.com/scifri-segments/scifri201711241.mp3",
@@ -506,8 +496,7 @@ class MediaLibrary {
       title: "From Cat Rheology To Operatic Incompetence",
       artist: "Science Friday and WNYC Studios",
       duration: Duration(milliseconds: 2856950),
-      artUri:
-          "https://media.wnyc.org/i/1400/1400/l/80/1/ScienceFriday_WNYCStudios_1400.jpg",
+      artUri: "https://media.wnyc.org/i/1400/1400/l/80/1/ScienceFriday_WNYCStudios_1400.jpg",
     ),
   ];
 
@@ -615,11 +604,8 @@ class TextPlayerTask extends BackgroundAudioTask {
     await super.onStop();
   }
 
-  MediaItem mediaItem(int number) => MediaItem(
-      id: 'tts_$number',
-      album: 'Numbers',
-      title: 'Number $number',
-      artist: 'Sample Artist');
+  MediaItem mediaItem(int number) =>
+      MediaItem(id: 'tts_$number', album: 'Numbers', title: 'Number $number', artist: 'Sample Artist');
 
   Future<void> _playPause() async {
     if (_playing) {

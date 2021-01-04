@@ -12,9 +12,9 @@ PODS:
   - path_provider (0.0.1)
   - path_provider_macos (0.0.1):
     - FlutterMacOS
-  - sqflite (0.0.1):
+  - sqflite (0.0.2):
     - FlutterMacOS
-    - FMDB (~> 2.7.2)
+    - FMDB (>= 2.7.5)
 
 DEPENDENCIES:
   - audio_service (from `Flutter/ephemeral/.symlinks/plugins/audio_service/macos`)
@@ -53,8 +53,8 @@ SPEC CHECKSUMS:
   just_audio: 1a11463e7e522bd4e8caa925b4247f1360cbe5a2
   path_provider: e0848572d1d38b9a7dd099e79cf83f5b7e2cde9f
   path_provider_macos: a0a3fd666cb7cd0448e936fb4abad4052961002b
-  sqflite: 6c1f07e1d4399d619ea619fea9171251dd24d058
+  sqflite: a5789cceda41d54d23f31d6de539d65bb14100ea
 
-PODFILE CHECKSUM: 63c650af922428cf4112e5df20f0106bea441e53
+PODFILE CHECKSUM: ce5dada5c7ee577b8c623cbe54ea5cf8296bfc86
 
-COCOAPODS: 1.9.3
+COCOAPODS: 1.10.0

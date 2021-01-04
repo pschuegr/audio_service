@@ -78,5 +78,17 @@ target 'Runner' do
   }
 end
 
+
+post_install do |pi|
+  pi.pods_project.targets.each do |t|
+      t.build_configurations.each do |bc|
+          if ['10.6', '10.7', '10.11'].include?(bc.build_settings['MACOSX_DEPLOYMENT_TARGET'])
+            bc.build_settings['MACOSX_DEPLOYMENT_TARGET'] = '10.12'
+          end
+      end
+  end
+end
+
+
 # Prevent Cocoapods from embedding a second Flutter framework and causing an error with the new Xcode build system.
 install! 'cocoapods', :disable_input_output_paths => true
